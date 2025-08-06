@@ -1,0 +1,21 @@
+[project]
+name = "camrec"
+version = "0.1.0"
+description = ""
+authors = [
+    { name = "Nikita Denissov", email = "n.denissov@ppa.kz" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "django (>=5.2.4,<6.0.0)",
+    "django-jazzmin (>=3.0.1,<4.0.0)",
+    "django-cryptography-django5 (>=2.2,<3.0)",
+    "hypercorn[h3,uvloop] (>=0.17.3,<0.18.0)",
+    "whitenoise (>=6.9.0,<7.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
