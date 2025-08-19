@@ -1,3 +1,4 @@
+import asyncio
 import shutil
 import subprocess
 from datetime import datetime, timedelta
@@ -149,10 +150,13 @@ class StreamArchiveFormView(StaffRequiredMixin, FormView):
     form_class = ArchivePeriodForm
 
     @staticmethod
-    def _stream_content_generator(files: List[Path]) -> Generator[bytes, None, None]:
+    async def _stream_content_generator(files: List[Path]):
         for file_path in files:
-            with file_path.open('rb') as f:
-                while chunk := f.read(CHUNK_SIZE):
+            async with await asyncio.to_thread(open, file_path, 'rb') as f:
+                while True:
+                    chunk = await asyncio.to_thread(f.read, CHUNK_SIZE)
+                    if not chunk:
+                        break
                     yield chunk
 
     def post(self, request, *args, **kwargs):
