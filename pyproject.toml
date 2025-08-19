@@ -13,6 +13,7 @@ dependencies = [
     "django-cryptography-django5 (>=2.2,<3.0)",
     "hypercorn[h3,uvloop] (>=0.17.3,<0.18.0)",
     "whitenoise (>=6.9.0,<7.0.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)",
 ]
 
 

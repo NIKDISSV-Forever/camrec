@@ -11,9 +11,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 from django.utils.translation import gettext_lazy as _
+from dotenv import load_dotenv
 
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOGFILE = BASE_DIR / 'logs' / 'recording.log'
@@ -23,8 +26,8 @@ SEGMENT_FORMAT = 'ts'
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ''
-FIELD_ENCRYPTION_KEY = ''
+SECRET_KEY = os.environ['SECRET_KEY']
+FIELD_ENCRYPTION_KEY = os.environ['FIELD_ENCRYPTION_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False

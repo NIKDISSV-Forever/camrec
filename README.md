@@ -21,19 +21,40 @@ source .venv/bin/activate
 # /etc/systemd/system/camrec.service
 [Unit]
 Description = CamRec Service (manage.py rec_service)
-After = network.target
+After = network-online.target
 
 [Service]
 Type = simple
-WorkingDirectory = /opt/camrec
-ExecStart = /opt/camrec/.venv/bin/python3 manage.py rec_service
+WorkingDirectory = /home/ppa/camrec
+ExecStart = /home/ppa/camrec/.venv/bin/python3 manage.py rec_service
 Restart = always
 RestartSec = 5
+User = root
+Group = root
 
 [Install]
 WantedBy = multi-user.target
 ```
 
+```ini
+# /etc/systemd/system/wwwcamrec.service
+[Unit]
+Description = CamRec Service (hypercorn)
+After = network-online.target
+Requires = dev-sda.device
+
+[Service]
+Type = simple
+WorkingDirectory = /home/ppa/camrec
+ExecStart = /home/ppa/camrec/.venv/bin/hypercorn camrec.asgi:application --bind 0.0.0.0:8000 --certfile certs/cert.pem --keyfile certs/key.pem --quic-bind 0.0.0.0:8001
+Restart = always
+RestartSec = 5
+User = root
+Group = root
+
+[Install]
+WantedBy = multi-user.target
+```
 ### Команды управления:
 
 ```bash
