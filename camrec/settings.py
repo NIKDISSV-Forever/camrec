@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import shutil
-import ctypes
 from pathlib import Path
 from collections import namedtuple
 
@@ -21,17 +20,18 @@ from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
 
 if os.name == 'nt':
-    def disk_usage(path):
-        total, free = ctypes.c_ulonglong(), ctypes.c_ulonglong()
-        get_disk_free_space_ex_w(ctypes.c_wchar_p(str(Path(path))),
-                                 ctypes.byref(ctypes.c_ulonglong()),
-                                 ctypes.byref(total), ctypes.byref(free))
-        return DiskUsage(t := total.value, t - (f := free.value), f)
+    if not hasattr(nt := __import__('nt'), '_getdiskusage'):  # for example, PyPy impl may not have
+        def _getdiskusage(path):
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(
+                ctypes.c_wchar_p(os.fspath(path)),
+                ctypes.byref(ctypes.c_ulonglong()),
+                ctypes.byref(total := ctypes.c_ulonglong()), ctypes.byref(free := ctypes.c_ulonglong())
+            )
+            return total.value, free.value
 
 
-    DiskUsage = namedtuple('usage', 'total used free')
-    get_disk_free_space_ex_w = ctypes.windll.kernel32.GetDiskFreeSpaceExW
-    shutil.disk_usage = disk_usage  # pypy monkeypatch for shutil.disk_usage
+        nt._getdiskusage = _getdiskusage
+        import ctypes
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
