@@ -12,9 +12,26 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import shutil
+import ctypes
+from pathlib import Path
+from collections import namedtuple
 
 from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
+
+if os.name == 'nt':
+    def disk_usage(path):
+        total, free = ctypes.c_ulonglong(), ctypes.c_ulonglong()
+        get_disk_free_space_ex_w(ctypes.c_wchar_p(str(Path(path))),
+                                 ctypes.byref(ctypes.c_ulonglong()),
+                                 ctypes.byref(total), ctypes.byref(free))
+        return DiskUsage(t := total.value, t - (f := free.value), f)
+
+
+    DiskUsage = namedtuple('usage', 'total used free')
+    get_disk_free_space_ex_w = ctypes.windll.kernel32.GetDiskFreeSpaceExW
+    shutil.disk_usage = disk_usage  # pypy monkeypatch for shutil.disk_usage
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,12 +48,16 @@ FIELD_ENCRYPTION_KEY = os.environ['FIELD_ENCRYPTION_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-
+try:
+    import jazzmin as _
+except ModuleNotFoundError:
+    JAZZMIN = False
+else:
+    JAZZMIN = os.environ.get('JAZZMIN', '').strip().casefold() in {'true', '1'}
 ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,6 +67,8 @@ INSTALLED_APPS = [
     'django_cryptography',
     'recorder.apps.RecorderConfig',
 ]
+if JAZZMIN:
+    INSTALLED_APPS.insert(0, 'jazzmin')
 JAZZMIN_UI_TWEAKS = {
     "navbar_small_text": True,
     "footer_small_text": True,
@@ -157,3 +180,4 @@ LOGIN_URL = 'admin:login'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+X_FRAME_OPTIONS = 'DENY'

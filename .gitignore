@@ -206,6 +206,9 @@ marimo/_lsp/
 __marimo__/
 
 logs/
-certs/
-fixtures.json
+static/
+.certs/
+.service/
+.fixtures.json
 db.sqlite3
+poetry.lock

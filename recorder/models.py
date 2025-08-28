@@ -1,4 +1,5 @@
 import datetime
+import os
 from pathlib import Path
 from django.conf import settings
 from django.db import models
@@ -22,11 +23,11 @@ class System(models.Model):
         default=50,
         verbose_name="Минимум свободного места (GB)"
     )
-    raid_device = models.CharField(
+    storage_pool_name = models.CharField(
         max_length=255,
-        default="/dev/md0",
-        verbose_name="Путь к RAID устройству",
-        help_text="Например, /dev/md0"
+        default="/dev/md0" if os.name == 'posix' else "Storage Pool",
+        verbose_name="Имя RAID массива / Пула носителей",
+        help_text="Для Linux: /dev/md0. Для Windows: имя пула носителей (например, 'Storage Pool')."
     )
     records_dir = models.CharField(
         max_length=255,

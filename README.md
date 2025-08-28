@@ -46,7 +46,7 @@ Requires = dev-sda.device
 [Service]
 Type = simple
 WorkingDirectory = /home/ppa/camrec
-ExecStart = /home/ppa/camrec/.venv/bin/hypercorn camrec.asgi:application --bind 0.0.0.0:8000 --certfile certs/cert.pem --keyfile certs/key.pem --quic-bind 0.0.0.0:8001
+ExecStart = /home/ppa/camrec/.venv/bin/hypercorn camrec.asgi:application --bind 0.0.0.0:8000 --certfile .certs/cert.pem --keyfile .certs/key.pem --quic-bind 0.0.0.0:8001
 Restart = always
 RestartSec = 5
 User = root
@@ -68,5 +68,5 @@ journalctl -u camrec -f
 # Запуск
 
 ```bash
-hypercorn camrec.asgi:application --bind 0.0.0.0:8000 --certfile certs/cert.pem --keyfile certs/key.pem --quic-bind 0.0.0.0:8001
+hypercorn camrec.asgi:application --bind 0.0.0.0:8000 --certfile .certs/cert.pem --keyfile .certs/key.pem --quic-bind 0.0.0.0:8001
 ```

@@ -12,54 +12,42 @@
 {% block content %}
     <div id="content-main">
         <div class="d-flex justify-content-between align-items-center mb-4"><h1 class="mb-0">{{ title }}</h1></div>
-
         <div class="row g-4 mb-4">
             <div class="col-md-6">
                 <div class="card h-100">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 bi bi-power me-2"> Статус системы</h5>
                         <div>
-                            {# ИЗМЕНЕНИЕ: Используем flag_status.* #}
-                            {% if flag_status.is_stopped %}
-                                <span class="badge bg-danger">Остановлена</span>
-                            {% else %}
-                                <span class="badge bg-success">Работает</span>
-                            {% endif %}
+                            {% if flag_status.is_stopped %}<span class="badge bg-danger">Остановлена</span>{% else %}
+                                <span class="badge bg-success">Работает</span>{% endif %}
                             {% if flag_status.is_restarting %}
-                                <span class="badge bg-info">Перезапускается</span>
-                            {% endif %}
+                                <span class="badge bg-info">Перезапускается</span>{% endif %}
                             {% if flag_status.is_moving %}
-                                <span class="badge bg-info">Перемещается</span>
-                            {% elif flag_status.is_removing %}
-                                <span class="badge bg-danger">Удаляется</span>
-                            {% endif %}
+                                <span class="badge bg-info">Перемещается</span>{% elif flag_status.is_removing %}
+                                <span class="badge bg-danger">Удаляется</span>{% endif %}
                         </div>
                     </div>
                     <div class="card-body">
                         <p class="card-text">
-                            <strong>Статус RAID ({{ system.raid_device }}):</strong><br>
-                        <pre class="mb-0 small bg-light p-2 rounded">{{ raid_status }}</pre>
+                            <strong>Статус хранилища ({{ system.storage_pool_name }}):</strong><br>
+                        <pre class="mb-0 small bg-light p-2 rounded" id="storage-status">Загрузка...</pre>
                     </div>
                     <div class="card-footer bg-transparent border-top-0 d-flex justify-content-end gap-2 pb-3">
                         <form action="{% url 'restart' %}" method="POST">{% csrf_token %}
-                            <button type="submit" class="btn btn-info bi bi-arrow-clockwise"> Перезапустить
-                            </button>
+                            <button type="submit" class="btn btn-info bi bi-arrow-clockwise"> Перезапустить</button>
                         </form>
                         <form action="{% url 'stop' %}" method="POST"
                               onsubmit="return confirm('Вы уверены, что хотите остановить службу записи?');">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-danger bi bi-stop-circle-fill"> Остановить
-                            </button>
+                            <button type="submit" class="btn btn-danger bi bi-stop-circle-fill"> Остановить</button>
                         </form>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="card h-100">
-                    <div class="card-header"><h5 class="mb-0 bi bi-hdd-stack-fill me-2"> Использование
-                        диска</h5></div>
+                    <div class="card-header"><h5 class="mb-0 bi bi-hdd-stack-fill me-2"> Использование диска</h5></div>
                     <div class="card-body">
-                        {# ИЗМЕНЕНИЕ: Используем disk_usage.* #}
                         {% if disk_usage.error %}
                             <div class="alert alert-warning">{{ disk_usage.error }}</div>
                         {% else %}
@@ -68,11 +56,10 @@
                                 <span>Всего: <strong>{{ disk_usage.total|floatformat:1 }} GB</strong></span>
                             </div>
                             <div class="progress" role="progressbar"
-                                 aria-valuenow="{{ disk_usage.percent|floatformat:0 }}"
-                                 aria-valuemin="0" aria-valuemax="100" style="height: 20px;">
+                                 aria-valuenow="{{ disk_usage.percent|floatformat:0 }}" aria-valuemin="0"
+                                 aria-valuemax="100" style="height: 20px;">
                                 <div class="progress-bar {{ disk_usage.color }} fw-bold ps-2"
-                                     style="width: {{ disk_usage.percent|floatformat:0 }}%;">
-                                    {{ disk_usage.percent|floatformat:0 }}%
+                                     style="width: {{ disk_usage.percent|floatformat:0 }}%;">{{ disk_usage.percent|floatformat:0 }}%
                                 </div>
                             </div>
                         {% endif %}
@@ -84,40 +71,19 @@
                 </div>
             </div>
         </div>
+
+        <!-- НОВЫЙ БЛОК: Управление дисками и хранилищем -->
         <div class="row g-4 mb-4">
-            <div class="col-md-6">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0 bi bi-hdd me-2"> SMART статус дисков</h5>
-                    </div>
-                    <div class="card-body p-0">
-                        {% if disks %}
-                            <ul class="list-group list-group-flush">
-                                {% for disk in disks %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><code>{{ disk.device }}</code>
-                                            <small class="text-muted">{{ disk.type|default_if_none:"" }}</small></span>
-                                        <form action="{% url 'smart-status' %}" method="POST" class="d-inline"
-                                              target="_blank">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="device" value="{{ forloop.counter0 }}">
-                                            <button type="submit" class="btn btn-outline-primary btn-sm">Посмотреть
-                                                SMART
-                                            </button>
-                                        </form>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p class="text-body p-3">Диски не найдены или smartctl недоступен.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0 bi bi-tools me-2"> Управление RAID</h5>
+                        <h5 class="mb-0 bi bi-tools me-2">
+                            {% if is_windows %}
+                                Управление пулом носителей
+                            {% else %}
+                                Управление RAID
+                            {% endif %}
+                        </h5>
                     </div>
                     <div class="card-body">
                         {% if disks %}
@@ -125,34 +91,72 @@
                                 <label for="disk_selector" class="form-label">Выберите диск:</label>
                                 <select id="disk_selector" class="form-select">
                                     {% for disk in disks %}
-                                        <option value="{{ forloop.counter0 }}">{{ disk.device }}</option>
+                                        <option value="{{ forloop.counter0 }}">
+                                            {% if is_windows %}
+                                                {{ disk.FriendlyName }} ({{ disk.HealthStatus }}, {{ disk.Usage }})
+                                            {% else %}
+                                                {{ disk.FriendlyName }}
+                                            {% endif %}
+                                        </option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="d-flex justify-content-start gap-2" id="raid-forms">
-                                <form action="{% url 'manage-raid' %}" method="POST"
-                                      onsubmit="return confirm('Отметить выбранный диск как сбойный? Это действие может привести к деградации массива.');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="fail">
-                                    <input type="hidden" name="device" value="0">
-                                    <button type="submit" class="btn btn-warning bi bi-exclamation-triangle-fill"> Сбой
-                                    </button>
-                                </form>
-                                <form action="{% url 'manage-raid' %}" method="POST"
-                                      onsubmit="return confirm('Удалить выбранный диск из массива? Убедитесь, что он уже отмечен как сбойный.');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="remove">
-                                    <input type="hidden" name="device" value="0">
-                                    <button type="submit" class="btn btn-danger bi bi-x-circle-fill"> Удалить</button>
-                                </form>
-                                <form action="{% url 'manage-raid' %}" method="POST"
-                                      onsubmit="return confirm('Добавить выбранный диск в массив? Начнется процесс восстановления.');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="add">
-                                    <input type="hidden" name="device" value="0">
-                                    <button type="submit" class="btn btn-success bi bi-plus-circle-fill"> Добавить
-                                    </button>
-                                </form>
+
+                            <!-- Формы управления -->
+                            <div class="d-flex justify-content-start gap-2 flex-wrap" id="storage-forms">
+                                {% if is_windows %}
+                                    <form action="{% url 'manage-storage' %}" method="POST"
+                                          onsubmit="return confirm('Вывести выбранный диск из эксплуатации (сделать Retired)? Данные будут перемещены на другие диски пула.');">
+                                        {% csrf_token %}<input type="hidden" name="action" value="retire"><input
+                                            type="hidden" name="device_index" value="0">
+                                        <button type="submit" class="btn btn-warning bi bi-exclamation-triangle-fill">
+                                            Вывести из эксплуатации
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'manage-storage' %}" method="POST"
+                                          onsubmit="return confirm('Удалить выбранный диск из пула? Убедитесь, что он выведен из эксплуатации или не содержит данных.');">
+                                        {% csrf_token %}<input type="hidden" name="action" value="remove"><input
+                                            type="hidden" name="device_index" value="0">
+                                        <button type="submit" class="btn btn-danger bi bi-x-circle-fill"> Удалить
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'manage-storage' %}" method="POST"
+                                          onsubmit="return confirm('Добавить выбранный диск в пул? Он должен быть доступен для пула (CanPool).');">
+                                        {% csrf_token %}<input type="hidden" name="action" value="add"><input
+                                            type="hidden" name="device_index" value="0">
+                                        <button type="submit" class="btn btn-success bi bi-plus-circle-fill"> Добавить
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'manage-storage' %}" method="POST"
+                                          onsubmit="return confirm('Запустить восстановление отказоустойчивости для всех дисков в пуле?');">
+                                        {% csrf_token %}<input type="hidden" name="action" value="repair">
+                                        <button type="submit" class="btn btn-info bi bi-shield-check"> Восстановить
+                                        </button>
+                                    </form>
+                                {% else %} {# Linux #}
+                                    <form action="{% url 'manage-storage' %}" method="POST"
+                                          onsubmit="return confirm('Отметить выбранный диск как сбойный? Это действие может привести к деградации массива.');">
+                                        {% csrf_token %}<input type="hidden" name="action" value="fail"><input
+                                            type="hidden" name="device_index" value="0">
+                                        <button type="submit" class="btn btn-warning bi bi-exclamation-triangle-fill">
+                                            Сбой
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'manage-storage' %}" method="POST"
+                                          onsubmit="return confirm('Удалить выбранный диск из массива? Убедитесь, что он уже отмечен как сбойный.');">
+                                        {% csrf_token %}<input type="hidden" name="action" value="remove"><input
+                                            type="hidden" name="device_index" value="0">
+                                        <button type="submit" class="btn btn-danger bi bi-x-circle-fill"> Удалить
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'manage-storage' %}" method="POST"
+                                          onsubmit="return confirm('Добавить выбранный диск в массив? Начнется процесс восстановления.');">
+                                        {% csrf_token %}<input type="hidden" name="action" value="add"><input
+                                            type="hidden" name="device_index" value="0">
+                                        <button type="submit" class="btn btn-success bi bi-plus-circle-fill"> Добавить
+                                        </button>
+                                    </form>
+                                {% endif %}
                             </div>
                         {% else %}
                             <p class="text-body">Нет дисков для управления.</p>
@@ -164,12 +168,12 @@
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="m-md-2 mb-0 bi bi-file-text-fill me-2"> Системный лог
-                    </h5>
+                    <h5 class="m-md-2 mb-0 bi bi-file-text-fill me-2"> Системный лог</h5>
                     <form class="m-md-2" action="{% url 'wipe-syslog' %}" method="POST"
                           onsubmit="return confirm('Очистить системный лог?');">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-danger bi bi-trash-fill me-1"> Очистить лог
+                        <button type="submit" class="btn btn-sm btn-outline-danger bi bi-trash-fill me-1"> Очистить
+                            лог
                         </button>
                     </form>
                 </div>
@@ -187,16 +191,28 @@
         document.addEventListener('DOMContentLoaded', function () {
             const selector = document.getElementById('disk_selector');
             if (selector) {
-                const forms = document.querySelectorAll('#raid-forms>form');
+                const forms = document.querySelectorAll('#storage-forms form');
                 const updateHiddenInputs = () => {
                     const selectedValue = selector.value;
                     forms.forEach(form => {
-                        const hiddenInput = form.querySelector('input[name="device"]');
+                        const hiddenInput = form.querySelector('input[name="device_index"]');
                         if (hiddenInput) hiddenInput.value = selectedValue;
                     });
                 };
                 selector.addEventListener('change', updateHiddenInputs);
-                updateHiddenInputs();
+                updateHiddenInputs(); // initial call
+            }
+            const statusBox = document.getElementById('storage-status');
+            if (statusBox) {
+                fetch("{% url 'storage-status' %}")
+                    .then(response => response.text())
+                    .then(text => {
+                        try {
+                            statusBox.textContent = JSON.stringify(JSON.parse(text), null, 2);
+                        } catch {
+                            statusBox.textContent = text;
+                        }
+                    });
             }
         });
     </script>
